@@ -1,0 +1,154 @@
+﻿@model VoteMap.Core.Models.TownView
+
+@{
+    ViewData["Title"] = "選票資料";
+}
+
+@section PageHeade
+{
+    <!-- https://openlayers.org/download/ -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.14.1/css/ol.css">
+    <!-- side menu -->
+    <link rel="stylesheet" href="/lib/slidemenu/css/slidemenu.css">
+    <!-- datatables.net -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.min.css">
+    <environment include="Development">
+        <link rel="stylesheet" href="~/css/town.css" asp-append-version="true"/>
+    </environment>
+    <environment exclude="Development">
+        <link rel="stylesheet" href="~/css/town.min.css" asp-append-version="true"/>
+    </environment>
+} 
+
+<div style="display:none">
+    <input id="year" value="@Model.year">
+    <input id="type" value="@Model.type">
+</div>
+<div id="map" class="sidebar-map"></div>
+<div class="slide-menu" style="width: 300px; height: 369px; top: 0px;">
+    <ul class="menu-items" style="left: -50px;">
+        <li class="menu-item" data-target="#Panel1" title="Panel 1" style="position: absolute; top: 0px;" data-index="0">
+	        <div class="menu-icon">
+            	<i class="fa fa-list"></i>
+            </div>
+        	<div class="menu-content">
+                <span class="menu_header"></span>
+            </div>
+            <div class="menu-close" style="width: 50px;">
+            	<i class="fa fa-times"></i>
+            </div>
+        </li>
+        <li id="CalendarIcon" class="menu-item" data-target="#Panel2" title="Panel 2" style="position: absolute; top: 45px;" data-index="1">
+        	<div class="menu-icon">
+                <i class="fad fa-chart-pie"></i>
+            </div>
+        	<div class="menu-content">                
+                <span class="menu_header"></span>
+            </div>
+            <div class="menu-close" style="width: 50px;">
+            	<i class="fa fa-times"></i>
+            </div>
+        </li>
+        <li id="ShoppingIcon" class="menu-item" data-target="#Panel3" title="Panel 3" style="position: absolute; top: 90px;" data-index="2">
+        	<div class="menu-icon">
+            	<i class="fas fa-info-circle"></i>
+            </div>
+        	<div class="menu-content">                
+                <span>參考資料</span>
+            </div>
+            <div class="menu-close" style="width: 50px;">
+            	<i class="fa fa-times"></i>
+            </div>
+        </li>
+    </ul>
+    <div class="menu-panels" style="height: 369px; left: -300px; bottom: 100%;">
+        <div id="Panel1" class="menu-panel">
+            <table id="tblVoteList" class="display nowrap number-monospace" style="width:100%;">
+                <thead>
+                    <tr>
+                        <th>候選人</th>
+                        <th>票數</th>
+                    </tr>
+                </thead>
+                <tfoot>
+                    <tr>
+                        <th style="text-align:center">總計</th>
+                        <th style="text-align:right"></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div id="Panel2" class="menu-panel">
+            <div id="donutchart" style="height: 450px;"></div>
+        </div>
+        <div id="Panel3" class="menu-panel">
+        	<ul>
+                <li class="my-3">
+                    <a target="_blank" href="https://openlayers.org">OpenLayers</a>
+                </li>
+                <li class="my-3">
+                    <a target="_blank" href="https://github.com/nathaniellord/slidemenu">SlideMenu</a>
+                </li>
+                <li class="my-3">
+                    <a target="_blank" href="https://datatables.net">DataTables</a>
+                </li>
+                <li class="my-3">
+                    <a target="_blank" href="https://developers.google.com/chart">Google Chart</a>
+                </li>
+                <li class="my-3">
+                    <a target="_blank" href="https://data.gov.tw/dataset/13119">選舉資料庫</a>
+                </li>
+                <li class="my-3">
+                    <a target="_blank" href="https://kiang.github.io/taiwan_basecode/city/city.topo.json">地圖圖資</a>
+                </li>
+                <li class="my-3">
+                    <a target="_blank" href="https://github.com/abowwang/votemap">Git Repository</a>
+                </li>
+                <li class="my-3">
+                    <a href="mailto:abow520@gmail.com">聯絡我</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+    
+
+@section Scripts
+{
+    <!-- https://openlayers.org/download/ -->
+    <script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.14.1/build/ol.js"></script>
+    <!-- https://github.com/nathaniellord/slidemenu -->
+    <script src="/lib/slidemenu/js/jquery.slidemenu.js"></script>
+    <!-- google chart -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <!-- datatables.net -->
+    <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
+    <!-- Local Site JS -->
+    <environment include="Development">
+        <script src="/js/town.js"  asp-append-version="true"></script>
+    </environment>
+    <environment exclude="Development">
+        <script src="/js/town.min.js"  asp-append-version="true"></script>
+    </environment>
+
+    <script type="text/javascript">
+        google.charts.load('current', {'packages':['corechart']});
+        
+        $(document).ready(function () {   
+            $(".slide-menu").slidemenu();
+            mytown.init_map();
+            mytown.initVoteDatatables();
+            mytown.fetch_vote_metrics();
+            mytown.googleDonutChart();
+        });
+
+        document.addEventListener('onvotemetricpanel', function (event) {
+           mytown.refreshVoteDatatables();
+        }, false);
+
+        document.addEventListener('ondonutchartpanel', function (event) {
+            mytown.googleDonutChart();
+        }, false);
+    </script>
+}
