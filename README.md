@@ -8,6 +8,7 @@
 ## Build  
 
 ```bash
+# http://localhost:50080
 $> ${workspaceFolder}/localbuild.sh
 ```  
 
